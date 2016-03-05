@@ -20,14 +20,11 @@ contract Tournament {
 		uint bet;
 	}
 
+	mapping (address => bool) added;
 	mapping (uint => Match) matches; 
 
 	function Tournament() {
-		current = Match({
-			leftPlayer: Player(address(0x0), bytes32(0x0), false, 0x0), 
-			rightPlayer: Player(address(0x0), bytes32(0x0), false, 0x0), 
-			winner: address(0x0),
-			bit: 0});
+		addMatch();
 		owner = msg.sender;
 		matchCount = 0;
 		playerCount = 0;
@@ -35,6 +32,9 @@ contract Tournament {
 	}
 
 	function addPlayer(bytes32 commit) public returns (uint num) {
+		if (added[msg.sender]) {
+			return;
+		}
 		if (msg.value >= 1000) {
 			var over = msg.value - 1000;
 			if (over > 0) {
@@ -49,6 +49,8 @@ contract Tournament {
 						bet: msg.value
 				});
 				current.bit = 1;
+				added[msg.sender] = true;
+
 			} else if (current.bit == 1) {
 				current.rightPlayer = Player({						
 						account: msg.sender,
@@ -56,23 +58,24 @@ contract Tournament {
 						hasCommited: false,
 						bet: msg.value
 				});
-			} else {
 				matches[matchCount++] = current;
-				current = Match({
-					leftPlayer: Player({
-						account: msg.sender,
-						commitment: commit,
-						hasCommited: false,
-						bet: msg.value}), 
-					rightPlayer: Player(address(0x0), bytes32(0x0), false, 0x0), 
-					winner: address(0x0),
-					bit: 1});
+				added[msg.sender] = true;
+				addMatch();
 			}
 
-			playerCount = playerCount + 1;
-			tournamentPot = tournamentPot + msg.value;
+			playerCount++;
+			tournamentPot += msg.value;
 			return playerCount;
 		}
+	}
+
+	function addMatch() {
+		current = Match({
+			leftPlayer: Player(address(0x0), bytes32(0x0), false, 0x0), 
+			rightPlayer: Player(address(0x0), bytes32(0x0), false, 0x0), 
+			winner: address(0x0),
+			bit: 0
+		});
 	}
 
 	function kill() {
