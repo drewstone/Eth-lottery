@@ -1,45 +1,30 @@
 var accounts;
-
 window.onload = function() {
   web3.eth.getAccounts(function(err, accs) {
     if (err != null) {
       alert("There was an error fetching your accounts.");
       return;
-    }
-
-    if (accs.length == 0) {
+    } else if (accs.length == 0) {
       alert("Couldn't get any accounts! Make sure your Ethereum client is configured correctly.");
       return;
     }
-
     accounts = accs;
     lottery();
   });
 }
 
 function lottery() {
-  tour = Tournament.deployed();
-  var first = accounts[0];
-  var second = accounts[1];
-
-  var first_secret = "secret_one";
-  var second_secret = "secret_two";
-  var first_commit = web3.sha3(first_secret);
-  var second_commit = web3.sha3(second_commit);
-
-  addPlayer(first, first_commit);
-  addPlayer(second, second_commit);
-  buildMatchTree();
+  var tour = Tournament.deployed()
+  addPlayers();
 }
 
-function addPlayer(address, commitment) {
-  tour = Tournament.deployed();
-  tour.addPlayer(commitment, {value:1000, from: address});
-}
-
-function buildMatchTree() {
-  tour = Tournament.deployed();
-  tour.createMatches({value: 0}).then(function(data) {
-    console.log(data.toNumber());
-  });
+function addPlayers() {
+  var tour = Tournament.deployed();
+  for (var i = 0; i < accounts.length; i++) {
+    var hash = web3.sha3(accounts[i] + i);
+    tour.addPlayer.sendTransaction(hash, {value: 1000, from: accounts[i], gas:1000000});
+    $("<tr><td class='text-left'>" + accounts[i] + "</td>" + 
+      "<td class='text-left'>" + hash + "</td>" + 
+      "<td class='text-left'>" + "Not Revealed" + "</td></tr>").appendTo('#players');
+  }
 }
