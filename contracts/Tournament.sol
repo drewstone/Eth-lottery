@@ -152,6 +152,14 @@ contract Tournament {
 
 	}
 
+	// function reMatch() {
+		
+	// }
+
+
+	/*
+		Utility function for converting bytes to integer for deciding match winners
+	*/
 	function bytesToUInt(bytes32 v) constant returns (uint ret) {
         if (v == 0x0) {
             throw;
@@ -173,6 +181,9 @@ contract Tournament {
         return ret;
     }
 
+    /*
+		Suicide function
+    */
 	function kill() {
 		if (msg.sender == owner) {
 			suicide(owner);
