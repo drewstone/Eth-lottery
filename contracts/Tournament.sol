@@ -24,8 +24,8 @@ contract Tournament {
 	mapping (bytes32 => bool) public commitments;
 	mapping (address => Player) public players;
 
-	event Eliminated(address loser)
-	event Payout(address lottoWinner, uint amount)
+	event Eliminated(address loser);
+	event Payout(address lottoWinner, uint amount);
 
 	/*
 		Tournament constructor creates a new empty match and initializes starting values
@@ -94,12 +94,12 @@ contract Tournament {
 				if (value == 1) {
 					winners.push(matches[i].leftPlayer.account);
 					matches[i].rightPlayer.eliminated = true;
-					Eliminated(matches[i].rightPlayer.account)
+					Eliminated(matches[i].rightPlayer.account);
 					commitments[matches[i].rightPlayer.commitment] = false;
 				} else {
 					winners.push(matches[i].rightPlayer.account);
 					matches[i].leftPlayer.eliminated = true;
-					Eliminated(matches[i].leftPlayer.account)
+					Eliminated(matches[i].leftPlayer.account);
 					commitments[matches[i].leftPlayer.commitment] = false;
 				}
 				playerCount--;

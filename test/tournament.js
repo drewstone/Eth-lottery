@@ -36,4 +36,30 @@ contract('Tournament', function(accounts) {
 			assert.equal(10, data.toNumber());
 		}).then(done).catch(done);
 	});
+
+	it("should complete a single round of the tournament", function(done) {
+		Tournament.new().then(function(tour) {
+			tour.playerCount.call().then(function(data) {
+				assert.equal(0, data.toNumber());
+			});
+
+			for (var i = 0; i < accounts.length; i++) {
+				var secret = "Account: " + i;
+				tour.addPlayer.sendTransaction(web3.sha3(web3.sha3(accounts[i], secret, i)), {
+						value: 1000, 
+						from: accounts[i], 
+						gas:1000000
+				});
+			}
+
+			tour.playerCount.call().then(function(data) {
+				assert.equal(10, data.toNumber());
+			});
+
+			tour.open.sendTransaction("Account: 0", 0, {
+				from: accounts[0],
+				gas: 1000000
+			});
+		}).then(done).catch(done);
+	});
 });
