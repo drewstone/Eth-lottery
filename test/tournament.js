@@ -13,8 +13,8 @@ contract('Tournament', function(accounts) {
 
 		var first = accounts[0];
 		var second = accounts[1];
-		var first_commit = web3.sha3(first, "Account: " + 0, 1);
-		var second_commit = web3.sha3(second, "Account: " + 1, 2);
+		var first_commit = web3.sha3(web3.sha3(first, "Account: " + 0, 1));
+		var second_commit = web3.sha3(web3.sha3(second, "Account: " + 1, 2));
 
 		tour.addPlayer.sendTransaction(first_commit, {value: 10000, from: first, gas: 1000000});
 		tour.addPlayer.sendTransaction(second_commit, {value: 10000, from: second, gas: 1000000});
@@ -28,7 +28,8 @@ contract('Tournament', function(accounts) {
 		var tour = Tournament.deployed();
 
 		for (var i = 0; i < accounts.length; i++) {
-			tour.addPlayer.sendTransaction(web3.sha3(accounts[i], "Account: " + i, i+1), {value: 1000, from: accounts[i], gas:1000000});
+			var secret = "Account: " + i;
+			tour.addPlayer.sendTransaction(web3.sha3(web3.sha3(accounts[i], secret, i+1)), {value: 1000, from: accounts[i], gas:1000000});
 		}
 
 		tour.playerCount.call().then(function(data) {
