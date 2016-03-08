@@ -43,12 +43,8 @@ contract Tournament {
 		current match.
 	*/
 	function addPlayer(bytes32 commit) {
-		// Player has already been added into the tournament
-		if (players[msg.sender].account == msg.sender) {
-			return;
-
 		// Abort protocol, two players have selected the same secret/commitment
-		} else if (commitments[commit]) {
+		if (commitments[commit]) {
 			return;
 
 		// Add new player to current match and send any excess Wei back to player
@@ -61,6 +57,7 @@ contract Tournament {
 			commitments[commit] = true;
 			populateMatch(msg.sender);
 			tournamentPot += msg.value;
+			playerCount += 1;
 			return;
 		}
 	}
@@ -142,7 +139,6 @@ contract Tournament {
 			matches.push(current);
 			resetMatch();
 		}
-		playerCount++;
 	}
 
 

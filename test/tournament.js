@@ -38,28 +38,21 @@ contract('Tournament', function(accounts) {
 	});
 
 	it("should complete a single round of the tournament", function(done) {
-		Tournament.new().then(function(tour) {
-			tour.playerCount.call().then(function(data) {
-				assert.equal(0, data.toNumber());
-			});
+		Tournament.new().then(function(newTour) {
 
-			for (var i = 0; i < accounts.length; i++) {
+			// Add 8 new players into the tournament (multiples of 2 needed currently)
+			for (var i = 0; i < 8; i++) {
 				var secret = "Account: " + i;
-				tour.addPlayer.sendTransaction(web3.sha3(web3.sha3(accounts[i], secret, i)), {
-						value: 1000, 
-						from: accounts[i], 
-						gas:1000000
-				});
+				newTour.addPlayer.sendTransaction(web3.sha3(web3.sha3(accounts[i], secret, i+1)), {value: 1000, from: accounts[i], gas:1000000});
 			}
 
-			tour.playerCount.call().then(function(data) {
-				assert.equal(10, data.toNumber());
+			newTour.playerCount.call().then(function(total) {
+				assert.equal(8, total.toNumber());
 			});
 
-			tour.open.sendTransaction("Account: 0", 0, {
-				from: accounts[0],
-				gas: 1000000
-			});
-		}).then(done).catch(done);
+			for (var i = 0; i < 8; i++) {
+
+			}
+		});
 	});
 });

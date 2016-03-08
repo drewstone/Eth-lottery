@@ -6,7 +6,7 @@ var contract_data = {
   abi: [{"inputs":[],"type":"constructor"}],
   binary: "606060405260068060106000396000f3606060405200",
   unlinked_binary: "606060405260068060106000396000f3606060405200",
-  address: "0xe1df4d533f3a32f7931a6a0b79b2954043482cbd",
+  address: "0x394741a7392557cd64c7acb8bcb6692c46339d54",
   generated_with: "2.0.4",
   contract_name: "Lottery"
 };
