@@ -4,6 +4,7 @@ contract Tournament {
 	uint public playerCount;
 	uint public tournamentPot;
 	address[] public winners;
+	uint public numRevealed;
 	Match current;
 	Match[] matches;
 
@@ -31,6 +32,11 @@ contract Tournament {
 		owner = msg.sender;
 		playerCount = 0;
 		tournamentPot = 0;
+		numRevealed = 0;
+	}
+
+	function doubleSha(bytes input) returns (bytes32 result) {
+		return sha3(sha3(input));
 	}
 
 	/*
@@ -60,7 +66,7 @@ contract Tournament {
 			tournamentPot += 1000;
 
 			Player p = players[msg.sender];
-			p.account = msg.sender
+			p.account = msg.sender;
 			p.commitment = commit;
 			p.hasRevealed = false;
 			p.choice = bytes32(0x0);
@@ -89,7 +95,10 @@ contract Tournament {
 		Secret revealing stage of protocol for each round of matches
 	*/
 	function open(bytes32 choice, uint nonce) {
-		if (!players[msg.sender].hasRevealed && sha3(sha3(msg.sender, choice, nonce)) == players[msg.sender].commitment) {
+		if (players[msg.sender].eliminated) {
+			return;
+		} else if (!players[msg.sender].hasRevealed && sha3(sha3(choice, nonce)) == players[msg.sender].commitment) {
+			numRevealed += 1;
 			players[msg.sender].hasRevealed = true;
 			players[msg.sender].choice = choice;
 		}
@@ -100,7 +109,7 @@ contract Tournament {
 		each player's hashed commitment modulo 2, add 1, and determine the winner
 		by selecting the left player if value = 1 and the right player if value = 2
 	*/
-	function checkRound() return (uint remaining) {
+	function checkRound() returns (uint remaining) {
 		for (uint i = 0; i < matches.length; i++) {
 			uint value = addmod(bytesToUInt(matches[i].leftPlayer.commitment), bytesToUInt(matches[i].rightPlayer.commitment), 2) + 1;
 			if (value == 1) {
@@ -110,16 +119,15 @@ contract Tournament {
 				winners.push(matches[i].rightPlayer.account);
 				matches[i].leftPlayer.eliminated = true;
 			}
-			playerCount--;
 		}
 		// All winners are chosen, generate new set of matches
 		delete matches;
 
 		// Check for lottery winner: when 1 player remains
 		if (winners.length == 1) {
-			winners[0].send(tournamentPot);
+			return winners.length;
 		} else {
-			return 
+			return winners.length;
 		}
 	}
 
@@ -135,18 +143,8 @@ contract Tournament {
 		}
 	}
 
-	/*
-		Utility function to check that all players have revealed their secret
-		in the current round of matches.
-	*/
-	function haveRevealed() constant returns (bool success) {
-		for (uint i = 0; i < matches.length; i++) {
-			Match temp = matches[i];
-			if (!temp.leftPlayer.hasRevealed || !temp.rightPlayer.hasRevealed) {
-				return false;
-			}
-		}
-		return true;
+	function getMatchCount() constant returns (uint matchcount) {
+		return matches.length;
 	}
 
 	/*
