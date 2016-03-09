@@ -1,54 +1,49 @@
 contract Tournament {
 
 	address public owner;
+	address[] public winners;
+
 	uint public playerCount;
 	uint public tournamentPot;
-	address[] public winners;
-	uint public numRevealed;
-	Match current;
-	Match[] matches;
+	uint public matchCount;
 
 	struct Match {
-		Player leftPlayer;
-		Player rightPlayer;
-		uint bit;
+		address leftPlayer;
+		address rightPlayer;
+		bool bit;
 	}
 
 	struct Player {
 		address account;
 		bytes32 commitment;
+		bytes choice;
 		bool hasRevealed;
-		bytes32 choice;
 		bool eliminated;
 	}
 
+	mapping (uint => Match) public matches;
 	mapping (address => Player) public players;
 
 	/*
 		Tournament constructor creates a new empty match and initializes starting values
 	*/
 	function Tournament() {
-		resetMatch();
 		owner = msg.sender;
 		playerCount = 0;
 		tournamentPot = 0;
-		numRevealed = 0;
+		matchCount = 0;
 	}
 
-	function doubleSha(bytes input) returns (bytes32 result) {
+	function compute_sha(bytes input) returns (bytes32 result) {
+		return sha3(input);
+	}
+
+	function compute_double_sha(bytes input) returns (bytes32 result) {
 		return sha3(sha3(input));
 	}
 
-	/*
-		Utility function for resetting the state of the current match for adding new
-		players into the tournament.
-	*/
-	function resetMatch() {
-		current = Match({
-			leftPlayer: Player(address(0x0), bytes32(0x0), false, bytes32(0x0), false), 
-			rightPlayer: Player(address(0x0), bytes32(0x0), false, bytes32(0x0), false), 
-			bit: 0
-		});
+	function compute_sha_args(bytes input, bytes nonce) returns (bytes32 result) {
+		return sha3(input, nonce);
 	}
 
 	/*
@@ -56,7 +51,7 @@ contract Tournament {
 		first open match as a left or right player depending on the status of a
 		current match.
 	*/
-	function addPlayer(bytes32 commit) {
+	function addPlayer(bytes32 commit) returns (bytes32 latest) {
 		// Add new player to current match and send any excess Wei back to player
 		if (msg.value >= 1000) {
 			if (msg.value - 1000 > 0) {
@@ -64,16 +59,15 @@ contract Tournament {
 			}
 
 			tournamentPot += 1000;
-
-			Player p = players[msg.sender];
-			p.account = msg.sender;
-			p.commitment = commit;
-			p.hasRevealed = false;
-			p.choice = bytes32(0x0);
-			p.eliminated = false;
-
-			playerCount += 1;
+			players[msg.sender].account = msg.sender;
+			players[msg.sender].commitment = commit;
+			players[msg.sender].choice = "";
+			players[msg.sender].hasRevealed = false;
+			players[msg.sender].eliminated = false;
 			populateMatch(msg.sender);
+			return commit;
+		} else {
+			return bytes32(0x0);
 		}
 	}
 
@@ -81,24 +75,22 @@ contract Tournament {
 		Utility function for populating the current unfilled match
 	*/
 	function populateMatch(address sender) {
-		if (current.bit == 0) {
-			current.leftPlayer = players[sender];
-			current.bit = 1;
+		if (matches[matchCount].bit) {
+			matches[matchCount++].rightPlayer = sender;
 		} else {
-			current.rightPlayer = players[sender];
-			current.bit = 0;
-			matches.push(current);
+			matches[matchCount].leftPlayer = sender;
+			matches[matchCount].bit = true;
 		}
+		playerCount++;
 	}
 
 	/*
 		Secret revealing stage of protocol for each round of matches
 	*/
-	function open(bytes32 choice, uint nonce) {
-		if (players[msg.sender].eliminated) {
+	function open(bytes choice) {
+		if (players[msg.sender].hasRevealed || players[msg.sender].eliminated) {
 			return;
-		} else if (!players[msg.sender].hasRevealed && sha3(sha3(choice, nonce)) == players[msg.sender].commitment) {
-			numRevealed += 1;
+		} else if (sha3(sha3(choice)) == players[msg.sender].commitment) {
 			players[msg.sender].hasRevealed = true;
 			players[msg.sender].choice = choice;
 		}
@@ -110,25 +102,23 @@ contract Tournament {
 		by selecting the left player if value = 1 and the right player if value = 2
 	*/
 	function checkRound() returns (uint remaining) {
-		for (uint i = 0; i < matches.length; i++) {
-			uint value = addmod(bytesToUInt(matches[i].leftPlayer.commitment), bytesToUInt(matches[i].rightPlayer.commitment), 2) + 1;
+		for (uint i = 0; i < matchCount; i++) {
+			uint value = 1 + addmod(
+				bytesToUInt(players[matches[i].leftPlayer].commitment), 
+				bytesToUInt(players[matches[i].rightPlayer].commitment), 
+				2);
 			if (value == 1) {
-				winners.push(matches[i].leftPlayer.account);
-				matches[i].rightPlayer.eliminated = true;
+				winners.push(matches[i].leftPlayer);
+				players[matches[i].rightPlayer].eliminated = true;
 			} else {
-				winners.push(matches[i].rightPlayer.account);
-				matches[i].leftPlayer.eliminated = true;
+				winners.push(matches[i].rightPlayer);
+				players[matches[i].rightPlayer].eliminated = true;
 			}
+			// Null out match entry
+			matches[i] = Match(address(0x0), address(0x0), false);
 		}
 		// All winners are chosen, generate new set of matches
-		delete matches;
-
-		// Check for lottery winner: when 1 player remains
-		if (winners.length == 1) {
-			return winners.length;
-		} else {
-			return winners.length;
-		}
+		return winners.length;
 	}
 
 	/*
@@ -138,13 +128,15 @@ contract Tournament {
 		if (players[msg.sender].eliminated) {
 			return;
 		} else {
-			players[msg.sender] = Player(msg.sender, commit, false, bytes32(0x0), false);
+			players[msg.sender].commitment = commit;
+			players[msg.sender].hasRevealed = false;
+			players[msg.sender].choice = "";
 			populateMatch(msg.sender);
 		}
 	}
 
 	function getMatchCount() constant returns (uint matchcount) {
-		return matches.length;
+		return matchCount;
 	}
 
 	/*
