@@ -6,6 +6,8 @@ contract Tournament {
 	uint public playerCount;
 	uint public tournamentPot;
 	uint public matchCount;
+	uint public revealCount;
+	bytes32 public tempHash;
 
 	struct Match {
 		address leftPlayer;
@@ -32,6 +34,7 @@ contract Tournament {
 		playerCount = 0;
 		tournamentPot = 0;
 		matchCount = 0;
+		revealCount = 0;
 	}
 
 	function compute_sha(bytes input) returns (bytes32 result) {
@@ -39,7 +42,8 @@ contract Tournament {
 	}
 
 	function compute_double_sha(bytes input) returns (bytes32 result) {
-		return sha3(sha3(input));
+		tempHash = sha3(input);
+		return tempHash;
 	}
 
 	function compute_sha_args(bytes input, bytes nonce) returns (bytes32 result) {
@@ -82,18 +86,22 @@ contract Tournament {
 			matches[matchCount].bit = true;
 		}
 		playerCount++;
+		return;
 	}
 
 	/*
 		Secret revealing stage of protocol for each round of matches
 	*/
 	function open(bytes choice) {
-		if (players[msg.sender].hasRevealed || players[msg.sender].eliminated) {
-			return;
-		} else if (sha3(sha3(choice)) == players[msg.sender].commitment) {
-			players[msg.sender].hasRevealed = true;
-			players[msg.sender].choice = choice;
+		if (!players[msg.sender].hasRevealed && !players[msg.sender].eliminated) {
+			tempHash = sha3(sha3(choice));
+			if (tempHash == players[msg.sender].commitment) {
+				revealCount += 1;
+				players[msg.sender].hasRevealed = true;
+				players[msg.sender].choice = choice;
+			}
 		}
+		return;
 	}
 
 	/*
@@ -101,24 +109,25 @@ contract Tournament {
 		each player's hashed commitment modulo 2, add 1, and determine the winner
 		by selecting the left player if value = 1 and the right player if value = 2
 	*/
-	function checkRound() returns (uint remaining) {
-		for (uint i = 0; i < matchCount; i++) {
-			uint value = 1 + addmod(
-				bytesToUInt(players[matches[i].leftPlayer].commitment), 
-				bytesToUInt(players[matches[i].rightPlayer].commitment), 
-				2);
-			if (value == 1) {
-				winners.push(matches[i].leftPlayer);
-				players[matches[i].rightPlayer].eliminated = true;
-			} else {
-				winners.push(matches[i].rightPlayer);
-				players[matches[i].rightPlayer].eliminated = true;
+	function checkRound() {
+		if (revealCount == playerCount) {
+			for (uint i = 0; i < matchCount; i++) {
+				uint value = 1 + addmod(
+					bytesToUInt(players[matches[i].leftPlayer].commitment), 
+					bytesToUInt(players[matches[i].rightPlayer].commitment), 
+					2);
+				if (value == 1) {
+					winners.push(matches[i].leftPlayer);
+					players[matches[i].rightPlayer].eliminated = true;
+				} else {
+					winners.push(matches[i].rightPlayer);
+					players[matches[i].rightPlayer].eliminated = true;
+				}
+				// Null out match entry
+				matches[i] = Match(address(0x0), address(0x0), false);
 			}
-			// Null out match entry
-			matches[i] = Match(address(0x0), address(0x0), false);
 		}
-		// All winners are chosen, generate new set of matches
-		return winners.length;
+		return;
 	}
 
 	/*
@@ -132,11 +141,8 @@ contract Tournament {
 			players[msg.sender].hasRevealed = false;
 			players[msg.sender].choice = "";
 			populateMatch(msg.sender);
+			return;
 		}
-	}
-
-	function getMatchCount() constant returns (uint matchcount) {
-		return matchCount;
 	}
 
 	/*
