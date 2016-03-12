@@ -57,8 +57,24 @@ contract Tournament {
 	/*
 		Testing bytes to int functionality
 	*/
-	function bytes_to_int(bytes32 s) returns (uint result) {
-		return uint(s);
+	function bytes_to_int(bytes32 s) returns (uint res) {
+		if (s == bytes32(0x0)) {
+			return;
+		} else {
+			uint digit = 0;
+			uint result = 0;
+			for (uint i = 0; i < 32; i++) {
+				digit = uint((uint(s) / (2**(8*(31-i)))) & 0xff);
+				if (digit == 0) {
+					break;
+				} else {
+					result *= 10;
+					result += (digit - 48);
+				}
+
+			}
+		}
+		return result;
 	}
 
 

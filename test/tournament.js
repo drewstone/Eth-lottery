@@ -62,7 +62,7 @@ contract('Tournament', function(accounts) {
 			assert.equal(2, result.toNumber(), "Two players haven't revealed yet");
 		});
 
-		tour.bytes_to_int.call(player_one_commit).then(function(result) {
+		tour.bytes_to_int.call("hi").then(function(result) {
 			console.log(result);
 		})
 		// tour.bytesToUInt.call(player_one_commit).then(function(result) {
