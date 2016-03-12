@@ -7,6 +7,7 @@ contract Tournament {
 	uint public tournamentPot;
 	uint public matchCount;
 	uint public revealCount;
+	uint public testValue;
 	bytes32 public tempHash;
 
 	struct Match {
@@ -37,18 +38,29 @@ contract Tournament {
 		revealCount = 0;
 	}
 
-	function compute_sha(bytes input) returns (bytes32 result) {
+	/*
+		Simple functions to ease hashing complications
+	*/
+	function single_sha(bytes input) returns (bytes32 result) {
 		return sha3(input);
 	}
 
-	function compute_double_sha(bytes input) returns (bytes32 result) {
-		tempHash = sha3(input);
+	function double_sha(bytes input) returns (bytes32 result) {
+		tempHash = sha3(sha3(input));
 		return tempHash;
 	}
 
-	function compute_sha_args(bytes input, bytes nonce) returns (bytes32 result) {
+	function multiple_sha(bytes input, bytes nonce) returns (bytes32 result) {
 		return sha3(input, nonce);
 	}
+
+	/*
+		Testing bytes to int functionality
+	*/
+	function bytes_to_int(bytes32 s) returns (uint result) {
+		return uint(s);
+	}
+
 
 	/*
 		Adds a new player into the tournament lottery and inserts them into the
@@ -112,10 +124,9 @@ contract Tournament {
 	function checkRound() {
 		if (revealCount == playerCount) {
 			for (uint i = 0; i < matchCount; i++) {
-				uint value = 1 + addmod(
-					bytesToUInt(players[matches[i].leftPlayer].commitment), 
-					bytesToUInt(players[matches[i].rightPlayer].commitment), 
-					2);
+				bytes32 left = players[matches[i].leftPlayer].commitment;
+				bytes32 right = players[matches[i].rightPlayer].commitment;
+				uint value = 1;
 				if (value == 1) {
 					winners.push(matches[i].leftPlayer);
 					players[matches[i].rightPlayer].eliminated = true;
@@ -125,6 +136,7 @@ contract Tournament {
 				}
 				// Null out match entry
 				matches[i] = Match(address(0x0), address(0x0), false);
+				playerCount--;
 			}
 		}
 		return;
@@ -144,30 +156,6 @@ contract Tournament {
 			return;
 		}
 	}
-
-	/*
-		Utility function for converting bytes to integer for deciding match winners
-	*/
-	function bytesToUInt(bytes32 v) constant returns (uint ret) {
-        if (v == 0x0) {
-            throw;
-        }
-
-        uint digit;
-
-        for (uint i = 0; i < 32; i++) {
-            digit = uint((uint(v) / (2 ** (8 * (31 - i)))) & 0xff);
-            if (digit == 0) {
-                break;
-            }
-            else if (digit < 48 || digit > 57) {
-                throw;
-            }
-            ret *= 10;
-            ret += (digit - 48);
-        }
-        return ret;
-    }
 
     /*
 		Suicide function

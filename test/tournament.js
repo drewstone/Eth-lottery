@@ -6,7 +6,23 @@ contract('Tournament', function(accounts) {
 
 		console.log("Sha P1: " + player_one_commit);
 		console.log("Sha P2: " + player_two_commit);
-		tour.compute_double_sha.sendTransaction("secret_one", {from: accounts[0]}).then(function(result, data) {
+		
+		tour.single_sha.call("secret_one").then(function(result) {
+			console.log("Single SHA result: " + result);
+		});
+		tour.multiple_sha.call("secret_one", 10).then(function(result) {
+			console.log("Multip SHA result: " + result);
+		});
+		tour.multiple_sha.call("secret_one", 1).then(function(result) {
+			console.log("Multip SHA result: " + result);
+		});
+
+		tour.multiple_sha.call("secret_one", 0).then(function(result) {
+			console.log("Multip SHA result: " + result);
+		});
+
+
+		tour.double_sha.sendTransaction("secret_one", {from: accounts[0]}).then(function(result, data) {
 			console.log("Sha from tx: " + result);
 			console.log("Test:" + data);
 			tour.tempHash.call().then(function(result) {
@@ -46,10 +62,15 @@ contract('Tournament', function(accounts) {
 			assert.equal(2, result.toNumber(), "Two players haven't revealed yet");
 		});
 
-
-
+		tour.bytes_to_int.call(player_one_commit).then(function(result) {
+			console.log(result);
+		})
+		// tour.bytesToUInt.call(player_one_commit).then(function(result) {
+		// 	console.log(result);
+		// });
 
 		tour.matchCount.call().then(function(count) {
+			console.log(count.toNumber());
 			assert.equal(1, count.toNumber(), "Error: not a single match in the lottery");
 		}).then(done).catch(done);
 	});
