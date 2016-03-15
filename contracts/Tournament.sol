@@ -1,6 +1,7 @@
 contract Tournament {
 
 	address public owner;
+	address public tempWinner;
 	address[] public winners;
 
 	uint public playerCount;
@@ -57,24 +58,12 @@ contract Tournament {
 	/*
 		Testing bytes to int functionality
 	*/
-	function bytes_to_int(bytes32 s) returns (uint res) {
-		if (s == bytes32(0x0)) {
-			return;
-		} else {
-			uint digit = 0;
-			uint result = 0;
-			for (uint i = 0; i < 32; i++) {
-				digit = uint((uint(s) / (2**(8*(31-i)))) & 0xff);
-				if (digit == 0) {
-					break;
-				} else {
-					result *= 10;
-					result += (digit - 48);
-				}
-
-			}
+	function bytes_to_int(bytes s) returns (uint result) {
+		uint temp;
+		for (uint i = 0; i < bytes(s).length; i++) {
+			temp += uint(s[i])*8;
 		}
-		return result;
+		return temp;
 	}
 
 
@@ -140,13 +129,16 @@ contract Tournament {
 	function checkRound() {
 		if (revealCount == playerCount) {
 			for (uint i = 0; i < matchCount; i++) {
-				bytes32 left = players[matches[i].leftPlayer].commitment;
-				bytes32 right = players[matches[i].rightPlayer].commitment;
-				uint value = 1;
+				bytes left = players[matches[i].leftPlayer].choice;
+				bytes right = players[matches[i].rightPlayer].choice;
+				uint value = 1 + addmod(bytes_to_int(left), bytes_to_int(right), 2);
+				testValue = value;
 				if (value == 1) {
+					tempWinner = matches[i].leftPlayer;
 					winners.push(matches[i].leftPlayer);
 					players[matches[i].rightPlayer].eliminated = true;
 				} else {
+					tempWinner = matches[i].rightPlayer;
 					winners.push(matches[i].rightPlayer);
 					players[matches[i].rightPlayer].eliminated = true;
 				}

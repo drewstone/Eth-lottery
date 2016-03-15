@@ -5,26 +5,21 @@ contract('Tournament', function(accounts) {
 		var player_two_commit = "0x" + web3.sha3("0x" + web3.sha3("secret_two"), {encoding: "hex"});
 
 		console.log("Sha P1: " + player_one_commit);
-		console.log("Sha P2: " + player_two_commit);
-		
-		tour.single_sha.call("secret_one").then(function(result) {
-			console.log("Single SHA result: " + result);
-		});
-		tour.multiple_sha.call("secret_one", 10).then(function(result) {
-			console.log("Multip SHA result: " + result);
-		});
-		tour.multiple_sha.call("secret_one", 1).then(function(result) {
-			console.log("Multip SHA result: " + result);
-		});
+		console.log("Sha P2: " + player_two_commit);		
+		// tour.single_sha.call("secret_one").then(function(result) {
+		// 	console.log("Single SHA result: " + result);
+		// });
+		// tour.multiple_sha.call("secret_one", 10).then(function(result) {
+		// 	console.log("Multip SHA result: " + result);
+		// });
+		// tour.multiple_sha.call("secret_one", 1).then(function(result) {
+		// 	console.log("Multip SHA result: " + result);
+		// });
 
-		tour.multiple_sha.call("secret_one", 0).then(function(result) {
-			console.log("Multip SHA result: " + result);
-		});
-
-
+		// tour.multiple_sha.call("secret_one", 0).then(function(result) {
+		// 	console.log("Multip SHA result: " + result);
+		// });
 		tour.double_sha.sendTransaction("secret_one", {from: accounts[0]}).then(function(result, data) {
-			console.log("Sha from tx: " + result);
-			console.log("Test:" + data);
 			tour.tempHash.call().then(function(result) {
 				console.log("Sha from pub: " + result);
 			});
@@ -62,12 +57,10 @@ contract('Tournament', function(accounts) {
 			assert.equal(2, result.toNumber(), "Two players haven't revealed yet");
 		});
 
-		tour.bytes_to_int.call("hi").then(function(result) {
+		tour.checkRound.sendTransaction({}, {from: player_one});
+		tour.tempWinner.call().then(function(result) {
 			console.log(result);
-		})
-		// tour.bytesToUInt.call(player_one_commit).then(function(result) {
-		// 	console.log(result);
-		// });
+		});
 
 		tour.matchCount.call().then(function(count) {
 			console.log(count.toNumber());
