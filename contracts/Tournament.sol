@@ -1,15 +1,14 @@
 contract Tournament {
 
 	address public owner;
-	address public tempWinner;
 	address[] public winners;
 
 	uint public playerCount;
 	uint public tournamentPot;
 	uint public matchCount;
 	uint public revealCount;
-	uint public testValue;
-	bytes32 public tempHash;
+
+	event Won(address winner, uint payout);
 
 	struct Match {
 		address leftPlayer;
@@ -40,22 +39,6 @@ contract Tournament {
 	}
 
 	/*
-		Simple functions to ease hashing complications
-	*/
-	function single_sha(bytes input) returns (bytes32 result) {
-		return sha3(input);
-	}
-
-	function double_sha(bytes input) returns (bytes32 result) {
-		tempHash = sha3(sha3(input));
-		return tempHash;
-	}
-
-	function multiple_sha(bytes input, bytes nonce) returns (bytes32 result) {
-		return sha3(input, nonce);
-	}
-
-	/*
 		Testing bytes to int functionality
 	*/
 	function bytes_to_int(bytes s) returns (uint result) {
@@ -65,7 +48,6 @@ contract Tournament {
 		}
 		return temp;
 	}
-
 
 	/*
 		Adds a new player into the tournament lottery and inserts them into the
@@ -129,10 +111,12 @@ contract Tournament {
 	function checkRound() {
 		if (revealCount == playerCount) {
 			for (uint i = 0; i < matchCount; i++) {
-				bytes left = players[matches[i].leftPlayer].choice;
+				bytes left = ;
 				bytes right = players[matches[i].rightPlayer].choice;
-				uint value = 1 + addmod(bytes_to_int(left), bytes_to_int(right), 2);
-				testValue = value;
+				uint value = 1 + addmod(
+					bytes_to_int(players[matches[i].leftPlayer].choice),
+					bytes_to_int(players[matches[i].rightPlayer].choice),
+					2);
 				if (value == 1) {
 					tempWinner = matches[i].leftPlayer;
 					winners.push(matches[i].leftPlayer);
@@ -146,6 +130,9 @@ contract Tournament {
 				matches[i] = Match(address(0x0), address(0x0), false);
 				playerCount--;
 			}
+		}
+		if (winners.length == 1) {
+			Won(winners[0], tournamentPot);
 		}
 		return;
 	}
